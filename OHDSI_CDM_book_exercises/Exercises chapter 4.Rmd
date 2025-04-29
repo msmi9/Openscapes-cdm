@@ -1,0 +1,44 @@
+---
+title: "Exercises chapter 4"
+output: html_document
+---
+
+```{r}
+library(SqlRender)
+library(DatabaseConnector)
+library(remotes)
+remotes::install_github("ohdsi/Eunomia", ref = "v1.0.0")
+```
+
+```{r}
+connectionDetails = Eunomia::getEunomiaConnectionDetails()
+```
+
+```{r}
+connection <- connect(connectionDetails)
+sql <- "SELECT *
+FROM @cdm.condition_occurrence
+LIMIT 1;"
+result <- renderTranslateQuerySql(connection, sql, cdm = "main")
+result
+```
+
+```{sql connection=connection}
+SELECT * FROM main.condition_occurrence
+WHERE CONDITION_CONCEPT_ID = 192671;
+```
+
+```{sql connection=connection}
+SELECT * FROM main.condition_occurrence
+WHERE condition_source_value = "K92.2";
+```
+
+```{sql connection=connection}
+SELECT * FROM main.observation_period
+WHERE person_id = 61;
+```
+
+```{sql connection=connection}
+SELECT * FROM concept
+```
+

@@ -1,0 +1,91 @@
+---
+title: "omop_db_setup_R_package"
+output: html_document
+---
+
+```{r}
+## Install and load necessary packages
+
+# intstall.packages("rJava")
+library(rJava)
+install.packages("DatabaseConnector")
+library(DatabaseConnector)
+# install.packages("SqlRender")
+library(SqlRender)
+# install.packages("devtools")
+library(devtools)
+# Install the CDM R package from the OHDSI github
+devtools::install_github("OHDSI/CommonDataModel")
+```
+
+```{r}
+# List the currently supported SQL dialects
+CommonDataModel::listSupportedDialects()
+```
+
+```{r}
+# LIst the currently supported CDM versions
+CommonDataModel::listSupportedVersions()
+```
+
+```{r}
+## 1) Use buildRelease function - this function will generate the text files in the dialect you choose, 
+## putting the output file in the folder you specify
+output_folder = paste0(getwd(), "/Build_Release_Files")
+CommonDataModel::buildRelease(cdmVersions = "5.4",
+                              targetDialects = "postgresql",
+                              outputfolder = output_folder)
+```
+
+```{r}
+## 2) Use the executeDdl function - If you have an empty schema ready to go, the package will connect and
+## instantiate the tables for you. To start, you need to download DatabaseConnector in order to connect 
+## to the database
+devtools::install_github("ohdsi/DatabaseConnector")
+# Path to where the required driver will be stored:
+path_to_driver = paste0(getwd(), "/JAR_Folder")
+# Download the required driver:
+DatabaseConnector::downloadJdbcDrivers("postgresql", pathToDriver = path_to_driver)
+# create connection details:
+cd <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
+                                                 server = "localhost/omop_db_r_pack_demo",
+                                                 user = "postgres",
+                                                 password = "postgres",
+                                                 pathToDriver = path_to_driver
+                                                 )
+
+# Use executeDdl function:
+CommonDataModel::executeDdl(connectionDetails = cd,
+                            cdmVersion = "5.4",
+                            cdmDatabaseSchema = "omop_db_r_pack_demo_schema"
+                            )
+```
+
+```{r}
+# load libraries
+library(DBI)
+library(RPostgres)
+
+# creaete the connection
+con <- dbConnect(RPostgres::Postgres(),
+                 dbname = "omop_db_r_pack_demo",
+                 host = "localhost",
+                 port = 5432,
+                 user = "msmith9",
+                 password = "password")
+
+dbDisconnect(con)
+```
+
+```{sql connection=con}
+SELECT table_name FROM information_schema.tables;
+```
+
+```{sql connection=con}
+SELECT * FROM omop_db_r_pack_demo_schema.procedure_occurrence;
+```
+
+```{sql connection=con}
+SELECT column_name FROM information_schema.columns WHERE table_name = 'person';
+```
+
